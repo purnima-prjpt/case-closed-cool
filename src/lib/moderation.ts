@@ -29,6 +29,35 @@ const PERSONAL_INFO = [
   /\b\d{1,5}\s+[A-Za-z]+\s+(street|st|road|rd|avenue|ave|lane|ln)\b/i,
 ];
 
+// Censored / leetspeak / abbreviated forms are not a loophole.
+const MASKED = [
+  /\bf+[\W_]*[u*@#!0-9][\W_]*c*[\W_]*k+\w*/i,
+  /\bs+[\W_]*[h#][\W_]*[i1!*][\W_]*t+\b/i,
+  /\bb+[\W_]*[i1!*@][\W_]*t+[\W_]*c+[\W_]*h+\w*/i,
+  /\ba+[\W_]*[s$5*]{2,}[\W_]*h*[\W_]*o*[\W_]*l*[\W_]*e*\b/i,
+  /\bd+[\W_]*[i1!*][\W_]*c+[\W_]*k+[\W_]*h*e*a*d*\b/i,
+  /\bc+[\W_]*u*[\W_]*n+[\W_]*t+\b/i,
+  /\bw+[\W_]*t+[\W_]*f+\b/i,
+  /\bs+[\W_]*t+[\W_]*f+[\W_]*u+\b/i,
+  /\bm+[\W_]*[c*]{1}[\W_]*b*[\W_]*c*\b/i,
+  /\bb+[\W_]*[c*][\W_]*\b/i,
+  /\bwtf\b|\bstfu\b|\bmc\b|\bbc\b|\bmf\b|\baf\b/i,
+  /\*{2,}/,
+];
+
+// Leet -> letters, so "b1tch" and "f@ck" normalise before the word check.
+function deleet(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[@4]/g, "a")
+    .replace(/[$5]/g, "s")
+    .replace(/[!1|]/g, "i")
+    .replace(/0/g, "o")
+    .replace(/3/g, "e")
+    .replace(/7/g, "t")
+    .replace(/[^a-z\s]/g, "");
+}
+
 export type ModerationResult = { ok: true } | { ok: false; reason: string };
 
 export function moderate(text: string, label = "This"): ModerationResult {
@@ -42,7 +71,13 @@ export function moderate(text: string, label = "This"): ModerationResult {
   }
 
   const lower = ` ${trimmed.toLowerCase().replace(/[^a-z0-9\s]/g, " ")} `;
-  const hit = BANNED.find((word) => lower.includes(` ${word} `));
+  const normalised = ` ${deleet(trimmed)} `;
+  const squashed = deleet(trimmed).replace(/\s+/g, "");
+  const hit =
+    BANNED.find((word) => lower.includes(` ${word} `)) ||
+    BANNED.find((word) => normalised.includes(` ${word} `)) ||
+    BANNED.find((word) => word.length > 4 && squashed.includes(word.replace(/\s+/g, ""))) ||
+    MASKED.some((re) => re.test(trimmed));
   if (hit) {
     return { ok: false, reason: "Order, order! Keep it light — that language can't enter the courtroom." };
   }
