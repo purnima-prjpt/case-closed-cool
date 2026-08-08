@@ -111,6 +111,15 @@ function Verdict() {
             <p className="mt-1 text-sm">{item.defense}</p>
           </div>
 
+          {item.sentence && (
+            <div className="mt-3 rounded-xl border border-dashed border-border p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Suggested sentence
+              </p>
+              <p className="mt-1 text-sm">{item.sentence}</p>
+            </div>
+          )}
+
           <div className="mt-6 border-t border-border pt-6">
             {settled && lead ? (
               <div className="flex flex-wrap items-center gap-3">
