@@ -8,6 +8,7 @@ export type Case = {
   category: string;
   story: string;
   defense: string;
+  sentence?: string;
   createdAt: number;
   expiresAt: number;
   votes: Record<VerdictKey, number>;
@@ -151,6 +152,7 @@ export function addCase(input: {
   category: string;
   story: string;
   defense: string;
+  sentence?: string;
 }): Case {
   const now = Date.now();
   const created: Case = {
