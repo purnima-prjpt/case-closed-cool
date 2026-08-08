@@ -20,7 +20,7 @@ import {
 
 export const Route = createFileRoute("/verdict")({
   validateSearch: (search: Record<string, unknown>) => ({
-    c: typeof search.c === "string" ? search.c : "",
+    c: typeof search["c"] === "string" ? (search["c"] as string) : "",
   }),
   head: () => ({
     meta: [

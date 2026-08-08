@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as JuryRouteImport } from './routes/jury'
+import { Route as VerdictRouteImport } from './routes/verdict'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JuryRoute = JuryRouteImport.update({
+  id: '/jury',
+  path: '/jury',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerdictRoute = VerdictRouteImport.update({
+  id: '/verdict',
+  path: '/verdict',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/jury': typeof JuryRoute
+  '/verdict': typeof VerdictRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/jury': typeof JuryRoute
+  '/verdict': typeof VerdictRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/jury': typeof JuryRoute
+  '/verdict': typeof VerdictRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/jury' | '/verdict'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/jury' | '/verdict'
+  id: '__root__' | '/' | '/jury' | '/verdict'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  JuryRoute: typeof JuryRoute
+  VerdictRoute: typeof VerdictRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +68,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/jury': {
+      id: '/jury'
+      path: '/jury'
+      fullPath: '/jury'
+      preLoaderRoute: typeof JuryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verdict': {
+      id: '/verdict'
+      path: '/verdict'
+      fullPath: '/verdict'
+      preLoaderRoute: typeof VerdictRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  JuryRoute: JuryRoute,
+  VerdictRoute: VerdictRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
