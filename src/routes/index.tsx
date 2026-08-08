@@ -156,10 +156,10 @@ function Index() {
             <h2 className="font-display text-lg font-bold">Court rules</h2>
             <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
               <li>1. Keep it light. Everyday drama only — no serious harm, no harassment.</li>
-              <li>2. No abusive language, slurs, or censored spellings of them. The bench sees through it.</li>
+              <li>2. No abusive language, slurs, or censored spellings of them.</li>
               <li>3. Stay anonymous. No real names, phone numbers, emails, links, or addresses.</li>
               <li>4. Be fair — write their defense honestly, not as a strawman.</li>
-              <li>5. One vote per case. No brigading the jury.</li>
+              <li>5. At least 5 votes are mandatory to close a case. One vote per browser.</li>
               <li>6. Every case self-destructs in 24 hours. Picture abhi baaki hai… par sirf ek din.</li>
             </ul>
           </div>
