@@ -68,7 +68,7 @@ function Index() {
       category: "Open Court",
       story: story.trim(),
       defense: defense.trim(),
-      sentence: sentence.trim() || undefined,
+      ...(sentence.trim() ? { sentence: sentence.trim() } : {}),
     });
     setCases(loadCases());
     setTitle("");
