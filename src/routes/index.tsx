@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { CaseCard } from "@/components/CaseCard";
 import { Layout } from "@/components/Layout";
 import {
-  CATEGORIES,
   DIALOGUES,
   addCase,
   loadCases,
@@ -42,9 +41,9 @@ function Index() {
   const navigate = useNavigate();
   const [cases, setCases] = useState<Case[]>([]);
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<string>(CATEGORIES[0]);
   const [story, setStory] = useState("");
   const [defense, setDefense] = useState("");
+  const [sentence, setSentence] = useState("");
 
   useEffect(() => setCases(loadCases()), []);
 
@@ -56,6 +55,7 @@ function Index() {
       [title, "Your case title"],
       [story, "Your side of the story"],
       [defense, "Their defense"],
+      ...(sentence.trim() ? ([[sentence, "Your suggested sentence"]] as const) : []),
     ] as const) {
       const check = moderate(text, label);
       if (!check.ok) {
@@ -63,11 +63,18 @@ function Index() {
         return;
       }
     }
-    const created = addCase({ title: title.trim(), category, story: story.trim(), defense: defense.trim() });
+    const created = addCase({
+      title: title.trim(),
+      category: "Open Court",
+      story: story.trim(),
+      defense: defense.trim(),
+      sentence: sentence.trim() || undefined,
+    });
     setCases(loadCases());
     setTitle("");
     setStory("");
     setDefense("");
+    setSentence("");
     toast.success("Case filed. Order, order!");
     navigate({ to: "/verdict", search: { c: shareUrl(created).split("?c=")[1] ?? "" } });
   }
@@ -107,19 +114,6 @@ function Index() {
             className="mt-1.5 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
 
-          <label className="mt-4 block text-sm font-semibold">Category</label>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-
           <label className="mt-4 block text-sm font-semibold">Your side</label>
           <textarea
             value={story}
@@ -138,6 +132,17 @@ function Index() {
             className="mt-1.5 w-full resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
 
+          <label className="mt-4 block text-sm font-semibold">
+            Suggested sentence <span className="font-normal text-muted-foreground">(optional)</span>
+          </label>
+          <textarea
+            value={sentence}
+            onChange={(e) => setSentence(e.target.value)}
+            rows={2}
+            placeholder="If guilty… one (1) sincere apology, no emoji."
+            className="mt-1.5 w-full resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+
           <button
             type="submit"
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
@@ -147,7 +152,19 @@ function Index() {
         </form>
 
         <div>
-          <h2 className="font-display text-xl font-bold">Live docket</h2>
+          <div className="rounded-2xl border border-border bg-secondary/50 p-5">
+            <h2 className="font-display text-lg font-bold">Court rules</h2>
+            <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+              <li>1. Keep it light. Everyday drama only — no serious harm, no harassment.</li>
+              <li>2. No abusive language, slurs, or censored spellings of them (f***, b!tch, etc.). The bench sees through it.</li>
+              <li>3. Stay anonymous. No real names, phone numbers, emails, links, or addresses.</li>
+              <li>4. Be fair — write their defense honestly, not as a strawman.</li>
+              <li>5. One vote per case. No brigading the jury.</li>
+              <li>6. Every case self-destructs in 24 hours. Picture abhi baaki hai… par sirf ek din.</li>
+            </ul>
+          </div>
+
+          <h2 className="mt-8 font-display text-xl font-bold">Live docket</h2>
           <p className="mt-1 text-sm text-muted-foreground">Cases still awaiting a verdict.</p>
           <div className="mt-4 space-y-4">
             {cases.length === 0 ? (
