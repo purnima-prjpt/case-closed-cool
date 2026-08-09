@@ -95,17 +95,16 @@ function Jury() {
               <p className="mt-1 text-sm">{current.defense}</p>
             </div>
 
-            <p className="mt-4 text-xs italic text-muted-foreground">{dialogue}</p>
+            {current.sentence && (
+              <div className="mt-3 rounded-xl border border-dashed border-border p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Proposed sentence
+                </p>
+                <p className="mt-1 text-sm">{current.sentence}</p>
+              </div>
+            )}
 
-            <label className="mt-6 block text-sm font-semibold">
-              Sentence <span className="font-normal text-muted-foreground">(optional)</span>
-            </label>
-            <input
-              value={sentence}
-              onChange={(e) => setSentence(e.target.value)}
-              placeholder="Sentenced to buying chai for the group chat"
-              className="mt-1.5 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
+            <p className="mt-4 text-xs italic text-muted-foreground">{dialogue}</p>
 
             <div className="mt-5 grid gap-2 sm:grid-cols-3">
               {VERDICTS.map((v) => (
