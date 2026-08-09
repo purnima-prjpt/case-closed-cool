@@ -6,7 +6,6 @@ import { Countdown, verdictStyles } from "@/components/CaseCard";
 import { Layout } from "@/components/Layout";
 import {
   DIALOGUES,
-  SENTENCES,
   VERDICTS,
   loadCases,
   pick,
@@ -16,7 +15,6 @@ import {
   type Case,
   type VerdictKey,
 } from "@/lib/court";
-import { moderate } from "@/lib/moderation";
 
 export const Route = createFileRoute("/jury")({
   head: () => ({
