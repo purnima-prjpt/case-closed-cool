@@ -40,7 +40,6 @@ export const Route = createFileRoute("/jury")({
 function Jury() {
   const [queue, setQueue] = useState<Case[]>([]);
   const [index, setIndex] = useState(0);
-  const [sentence, setSentence] = useState("");
 
   useEffect(() => {
     const voted = new Set(votedIds());
@@ -52,16 +51,8 @@ function Jury() {
 
   function vote(key: VerdictKey) {
     if (!current) return;
-    if (sentence.trim()) {
-      const check = moderate(sentence, "Your sentence");
-      if (!check.ok) {
-        toast.error(check.reason);
-        return;
-      }
-    }
     voteOn(current.id, key);
-    toast.success(sentence.trim() ? sentence.trim() : pick(SENTENCES));
-    setSentence("");
+    toast.success("Verdict recorded. Order, order!");
     setIndex((i) => i + 1);
   }
 
