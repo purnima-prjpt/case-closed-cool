@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Gavel, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { CaseCard } from "@/components/CaseCard";
@@ -44,10 +44,12 @@ function Index() {
   const [story, setStory] = useState("");
   const [defense, setDefense] = useState("");
   const [sentence, setSentence] = useState("");
+  const [dialogue, setDialogue] = useState("Order, order! Welcome to the bench.");
 
-  useEffect(() => setCases(loadCases()), []);
-
-  const dialogue = useMemo(() => pick(DIALOGUES), []);
+  useEffect(() => {
+    setCases(loadCases());
+    setDialogue(pick(DIALOGUES));
+  }, []);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -96,10 +98,10 @@ function Index() {
         </p>
       </section>
 
-      <section className="mx-auto grid max-w-5xl gap-8 px-4 lg:grid-cols-[1fr_1.1fr]">
+      <section className="mx-auto max-w-2xl px-4">
         <form
           onSubmit={submit}
-          className="h-fit rounded-2xl border border-border bg-card p-5 lg:sticky lg:top-20"
+          className="rounded-2xl border border-border bg-card p-5"
         >
           <h2 className="font-display text-xl font-bold">Raise a case</h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -150,33 +152,36 @@ function Index() {
             <Gavel className="h-4 w-4" /> File it
           </button>
         </form>
+      </section>
 
-        <div>
-          <div className="rounded-2xl border border-border bg-secondary/50 p-5">
-            <h2 className="font-display text-lg font-bold">Court rules</h2>
-            <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-              <li>1. Keep it light. Everyday drama only — no serious harm, no harassment.</li>
-              <li>2. No abusive language, slurs, or censored spellings of them.</li>
-              <li>3. Stay anonymous. No real names, phone numbers, emails, links, or addresses.</li>
-              <li>4. Be fair — write their defense honestly, not as a strawman.</li>
-              <li>5. At least 5 votes are mandatory to close a case. One vote per browser.</li>
-              <li>6. Every case self-destructs in 24 hours. Picture abhi baaki hai… par sirf ek din.</li>
-            </ul>
-          </div>
+      <section className="mx-auto mt-12 max-w-5xl px-4">
+        <h2 className="font-display text-xl font-bold">Live docket</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Cases still awaiting a verdict.</p>
+        <div className="mt-4 space-y-4">
+          {cases.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+              Docket's empty. Be the first delulu.
+            </p>
+          ) : (
+            cases.map((c) => <CaseCard key={c.id} item={c} />)
+          )}
+        </div>
+      </section>
 
-          <h2 className="mt-8 font-display text-xl font-bold">Live docket</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Cases still awaiting a verdict.</p>
-          <div className="mt-4 space-y-4">
-            {cases.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-                Docket's empty. Be the first delulu.
-              </p>
-            ) : (
-              cases.map((c) => <CaseCard key={c.id} item={c} />)
-            )}
-          </div>
+      <section className="mx-auto mt-12 max-w-5xl px-4 pb-16">
+        <div className="rounded-2xl border border-border bg-secondary/50 p-5">
+          <h2 className="font-display text-lg font-bold">Court rules</h2>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+            <li>1. Keep it light. Everyday drama only — no serious harm, no harassment.</li>
+            <li>2. No abusive language, slurs, or censored spellings of them.</li>
+            <li>3. Stay anonymous. No real names, phone numbers, emails, links, or addresses.</li>
+            <li>4. Be fair — write their defense honestly, not as a strawman.</li>
+            <li>5. At least 5 votes are mandatory to close a case. One vote per browser.</li>
+            <li>6. Every case self-destructs in 24 hours. Picture abhi baaki hai… par sirf ek din.</li>
+          </ul>
         </div>
       </section>
     </Layout>
   );
 }
+
