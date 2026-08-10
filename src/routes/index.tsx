@@ -69,13 +69,13 @@ function Index() {
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    for (const [text, label] of [
-      [title, "Your case title"],
-      [story, "Your side of the story"],
-      [defense, "Their defense"],
-      ...(sentence.trim() ? ([[sentence, "Your suggested sentence"]] as const) : []),
+    for (const [text, label, min] of [
+      [title, "Your case title", 10],
+      [story, "Your side of the story", 10],
+      [defense, "The other side", 3],
+      ...(sentence.trim() ? ([[sentence, "Your suggested sentence", 3]] as const) : []),
     ] as const) {
-      const check = moderate(text, label);
+      const check = moderate(text, label, min);
       if (!check.ok) {
         toast.error(check.reason);
         return;
