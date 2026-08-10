@@ -101,7 +101,7 @@ function Jury() {
 
             <div className="mt-4 rounded-xl border border-border bg-secondary/60 p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                The defense
+                Side B
               </p>
               <p className="mt-1 text-sm">{current.defense}</p>
             </div>

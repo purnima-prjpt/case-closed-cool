@@ -69,13 +69,13 @@ function Index() {
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    for (const [text, label] of [
-      [title, "Your case title"],
-      [story, "Your side of the story"],
-      [defense, "Their defense"],
-      ...(sentence.trim() ? ([[sentence, "Your suggested sentence"]] as const) : []),
+    for (const [text, label, min] of [
+      [title, "Your case title", 10],
+      [story, "Your side of the story", 10],
+      [defense, "The other side", 3],
+      ...(sentence.trim() ? ([[sentence, "Your suggested sentence", 3]] as const) : []),
     ] as const) {
-      const check = moderate(text, label);
+      const check = moderate(text, label, min);
       if (!check.ok) {
         toast.error(check.reason);
         return;
@@ -110,34 +110,35 @@ function Index() {
         <form onSubmit={submit} className="rounded-2xl border border-border bg-card p-5">
           <h2 className="font-display text-xl font-bold">Raise a case</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Keep it light. No names, no numbers, no links.
+            Your drama or someone else's — file it as a witness too. No names, no numbers, no links.
           </p>
 
           <label className="mt-5 block text-sm font-semibold">What happened?</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="My roommate keeps using my charger without asking"
+            placeholder="Two friends in my group chat won't stop fighting over a bill"
             className="mt-1.5 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
 
-          <label className="mt-4 block text-sm font-semibold">Your side</label>
+          <label className="mt-4 block text-sm font-semibold">Side A</label>
           <textarea
             value={story}
             onChange={(e) => setStory(e.target.value)}
             rows={4}
-            placeholder="Set the scene. Kitne aadmi the?"
+            placeholder="Set the scene — yours, theirs, or the whole group's. Kitne aadmi the?"
             className="mt-1.5 w-full resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
 
-          <label className="mt-4 block text-sm font-semibold">Their defense</label>
+          <label className="mt-4 block text-sm font-semibold">Side B</label>
           <textarea
             value={defense}
             onChange={(e) => setDefense(e.target.value)}
             rows={3}
-            placeholder="Be fair. What would they say?"
+            placeholder="Be fair. What would the other side say?"
             className="mt-1.5 w-full resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
+
 
           <label className="mt-4 block text-sm font-semibold">
             Suggested sentence <span className="font-normal text-muted-foreground">(optional)</span>

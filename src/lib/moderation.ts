@@ -60,11 +60,14 @@ function deleet(text: string) {
 
 export type ModerationResult = { ok: true } | { ok: false; reason: string };
 
-export function moderate(text: string, label = "This"): ModerationResult {
+export function moderate(text: string, label = "This", minLength = 10): ModerationResult {
   const trimmed = text.trim();
 
-  if (trimmed.length < 10) {
+  if (trimmed.length < minLength) {
     return { ok: false, reason: `${label} is too short. Give us the tea, not the teabag.` };
+  }
+  if (minLength > 0 && !/[a-zA-Z\u0900-\u097F]{2,}/.test(trimmed)) {
+    return { ok: false, reason: `${label} needs actual words, not just symbols.` };
   }
   if (trimmed.length > 600) {
     return { ok: false, reason: `${label} is too long. This is a bench, not a Netflix series.` };
