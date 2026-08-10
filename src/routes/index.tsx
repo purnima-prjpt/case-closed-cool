@@ -1,18 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Gavel, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { CaseCard } from "@/components/CaseCard";
 import { Layout } from "@/components/Layout";
-import {
-  DIALOGUES,
-  addCase,
-  loadCases,
-  pick,
-  shareUrl,
-  type Case,
-} from "@/lib/court";
+import { DIALOGUES, createCase, fetchCases, isOpen, pick } from "@/lib/court";
 import { moderate } from "@/lib/moderation";
 
 export const Route = createFileRoute("/")({
@@ -39,7 +33,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const navigate = useNavigate();
-  const [cases, setCases] = useState<Case[]>([]);
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [story, setStory] = useState("");
   const [defense, setDefense] = useState("");
@@ -47,9 +41,31 @@ function Index() {
   const [dialogue, setDialogue] = useState("Order, order! Welcome to the bench.");
 
   useEffect(() => {
-    setCases(loadCases());
     setDialogue(pick(DIALOGUES));
   }, []);
+
+  const { data: cases = [], isLoading } = useQuery({
+    queryKey: ["cases"],
+    queryFn: fetchCases,
+    refetchInterval: 15000,
+  });
+
+  const open = useMemo(() => cases.filter(isOpen), [cases]);
+  const closed = useMemo(() => cases.filter((c) => !isOpen(c)), [cases]);
+
+  const mutation = useMutation({
+    mutationFn: createCase,
+    onSuccess: (created) => {
+      setTitle("");
+      setStory("");
+      setDefense("");
+      setSentence("");
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+      toast.success("Case filed. Order, order!");
+      navigate({ to: "/verdict", search: { id: created.id } });
+    },
+    onError: () => toast.error("Couldn't file the case. Try again in a moment."),
+  });
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -65,20 +81,12 @@ function Index() {
         return;
       }
     }
-    const created = addCase({
+    mutation.mutate({
       title: title.trim(),
-      category: "Open Court",
       story: story.trim(),
       defense: defense.trim(),
       ...(sentence.trim() ? { sentence: sentence.trim() } : {}),
     });
-    setCases(loadCases());
-    setTitle("");
-    setStory("");
-    setDefense("");
-    setSentence("");
-    toast.success("Case filed. Order, order!");
-    navigate({ to: "/verdict", search: { c: shareUrl(created).split("?c=")[1] ?? "" } });
   }
 
   return (
@@ -99,10 +107,7 @@ function Index() {
       </section>
 
       <section className="mx-auto max-w-2xl px-4">
-        <form
-          onSubmit={submit}
-          className="rounded-2xl border border-border bg-card p-5"
-        >
+        <form onSubmit={submit} className="rounded-2xl border border-border bg-card p-5">
           <h2 className="font-display text-xl font-bold">Raise a case</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Keep it light. No names, no numbers, no links.
@@ -147,9 +152,10 @@ function Index() {
 
           <button
             type="submit"
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+            disabled={mutation.isPending}
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            <Gavel className="h-4 w-4" /> File it
+            <Gavel className="h-4 w-4" /> {mutation.isPending ? "Filing…" : "File it"}
           </button>
         </form>
       </section>
@@ -158,15 +164,31 @@ function Index() {
         <h2 className="font-display text-xl font-bold">Live docket</h2>
         <p className="mt-1 text-sm text-muted-foreground">Cases still awaiting a verdict.</p>
         <div className="mt-4 space-y-4">
-          {cases.length === 0 ? (
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading the docket…</p>
+          ) : open.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
               Docket's empty. Be the first delulu.
             </p>
           ) : (
-            cases.map((c) => <CaseCard key={c.id} item={c} />)
+            open.map((c) => <CaseCard key={c.id} item={c} />)
           )}
         </div>
       </section>
+
+      {closed.length > 0 && (
+        <section className="mx-auto mt-12 max-w-5xl px-4">
+          <h2 className="font-display text-xl font-bold">Recent verdicts</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Closed cases stay up for 24 hours, then vanish.
+          </p>
+          <div className="mt-4 space-y-4">
+            {closed.map((c) => (
+              <CaseCard key={c.id} item={c} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="mx-auto mt-12 max-w-5xl px-4 pb-16">
         <div className="rounded-2xl border border-border bg-secondary/50 p-5">
@@ -184,4 +206,3 @@ function Index() {
     </Layout>
   );
 }
-
