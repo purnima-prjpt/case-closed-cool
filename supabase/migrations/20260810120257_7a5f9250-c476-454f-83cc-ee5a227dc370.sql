@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.close_case_on_quorum() FROM PUBLIC, anon, authenticated;
