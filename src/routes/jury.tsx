@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Countdown, verdictStyles } from "@/components/CaseCard";
@@ -7,12 +8,12 @@ import { Layout } from "@/components/Layout";
 import {
   DIALOGUES,
   VERDICTS,
-  loadCases,
+  VERDICT_THRESHOLD,
+  castVote,
+  fetchCases,
+  isOpen,
   pick,
-  shareUrl,
-  voteOn,
-  votedIds,
-  type Case,
+  totalVotes,
   type VerdictKey,
 } from "@/lib/court";
 
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/jury")({
       {
         name: "description",
         content:
-          "Read anonymous cases and vote Not Guilty, Guilty or Shared Blame. Hand down a sentence while you're at it.",
+          "Read anonymous cases and vote Not Guilty, Guilty or Shared Blame. Five votes close a case.",
       },
       { property: "og:title", content: "Jury Duty — Delulu Bench" },
       {
@@ -38,23 +39,31 @@ export const Route = createFileRoute("/jury")({
 });
 
 function Jury() {
-  const [queue, setQueue] = useState<Case[]>([]);
+  const queryClient = useQueryClient();
   const [index, setIndex] = useState(0);
 
-  useEffect(() => {
-    const voted = new Set(votedIds());
-    setQueue(loadCases().filter((c) => !voted.has(c.id)));
-  }, []);
+  const { data: cases = [], isLoading } = useQuery({
+    queryKey: ["cases"],
+    queryFn: fetchCases,
+    refetchInterval: 15000,
+  });
 
-  const current = queue[index];
+  const queue = useMemo(() => cases.filter((c) => isOpen(c) && !c.voted), [cases]);
+  const current = queue[index] ?? queue[0];
   const dialogue = useMemo(() => pick(DIALOGUES, current?.id), [current?.id]);
 
-  function vote(key: VerdictKey) {
-    if (!current) return;
-    voteOn(current.id, key);
-    toast.success("Verdict recorded. Order, order!");
-    setIndex((i) => i + 1);
-  }
+  const mutation = useMutation({
+    mutationFn: ({ id, verdict }: { id: string; verdict: VerdictKey }) => castVote(id, verdict),
+    onSuccess: () => {
+      toast.success("Verdict recorded. Order, order!");
+      setIndex((i) => i + 1);
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+    },
+    onError: () => {
+      toast.error("That vote didn't land — the case may have closed already.");
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
+    },
+  });
 
   return (
     <Layout>
@@ -64,7 +73,9 @@ function Jury() {
           One case at a time. Vote honestly, you're anonymous anyway.
         </p>
 
-        {!current ? (
+        {isLoading ? (
+          <p className="mt-8 text-sm text-muted-foreground">Calling the docket…</p>
+        ) : !current ? (
           <div className="mt-8 rounded-2xl border border-dashed border-border p-10 text-center">
             <p className="font-display text-lg font-bold">Court adjourned.</p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -110,8 +121,9 @@ function Jury() {
               {VERDICTS.map((v) => (
                 <button
                   key={v.key}
-                  onClick={() => vote(v.key)}
-                  className={`rounded-xl border px-3 py-3 text-sm font-bold transition-transform hover:-translate-y-0.5 ${verdictStyles[v.key]}`}
+                  disabled={mutation.isPending}
+                  onClick={() => mutation.mutate({ id: current.id, verdict: v.key })}
+                  className={`rounded-xl border px-3 py-3 text-sm font-bold transition-transform hover:-translate-y-0.5 disabled:opacity-60 ${verdictStyles[v.key]}`}
                 >
                   {v.label}
                   <span className="block text-xs font-medium opacity-70">{v.sub}</span>
@@ -119,14 +131,30 @@ function Jury() {
               ))}
             </div>
 
-            <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-              <span>
-                Case {index + 1} of {queue.length}
-              </span>
+            <div className="mt-5">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>
+                  Jury {totalVotes(current)}/{VERDICT_THRESHOLD}
+                </span>
+                <span>
+                  Case {Math.min(index + 1, queue.length)} of {queue.length}
+                </span>
+              </div>
+              <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{
+                    width: `${Math.min(100, (totalVotes(current) / VERDICT_THRESHOLD) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 text-right">
               <Link
                 to="/verdict"
-                search={{ c: shareUrl(current).split("?c=")[1] ?? "" }}
-                className="font-semibold text-primary hover:underline"
+                search={{ id: current.id }}
+                className="text-xs font-semibold text-primary hover:underline"
               >
                 Skip to verdict →
               </Link>
