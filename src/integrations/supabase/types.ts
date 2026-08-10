@@ -14,7 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cases: {
+        Row: {
+          category: string
+          closed_at: string | null
+          created_at: string
+          defense: string
+          expires_at: string
+          id: string
+          sentence: string | null
+          story: string
+          title: string
+        }
+        Insert: {
+          category?: string
+          closed_at?: string | null
+          created_at?: string
+          defense: string
+          expires_at?: string
+          id?: string
+          sentence?: string | null
+          story: string
+          title: string
+        }
+        Update: {
+          category?: string
+          closed_at?: string | null
+          created_at?: string
+          defense?: string
+          expires_at?: string
+          id?: string
+          sentence?: string | null
+          story?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      votes: {
+        Row: {
+          case_id: string
+          created_at: string
+          id: string
+          verdict: string
+          voter_key: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          id?: string
+          verdict: string
+          voter_key: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          id?: string
+          verdict?: string
+          voter_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votes_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
