@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Link2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 
 import { Countdown, VerdictBadge } from "@/components/CaseCard";
@@ -9,18 +10,17 @@ import {
   DIALOGUES,
   VERDICTS,
   VERDICT_THRESHOLD,
-  decodeCase,
+  fetchCase,
+  isClosed,
   leadingVerdict,
-  loadCases,
   pick,
   shareUrl,
   totalVotes,
-  type Case,
 } from "@/lib/court";
 
 export const Route = createFileRoute("/verdict")({
   validateSearch: (search: Record<string, unknown>) => ({
-    c: typeof search["c"] === "string" ? (search["c"] as string) : "",
+    id: typeof search["id"] === "string" ? (search["id"] as string) : "",
   }),
   head: () => ({
     meta: [
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/verdict")({
       {
         name: "description",
         content:
-          "See how strangers voted on this case: Not Guilty, Guilty or Shared Blame. Share the link, the whole case travels with it.",
+          "See how strangers voted on this case: Not Guilty, Guilty or Shared Blame. Share the link and let the jury fill up.",
       },
       { property: "og:title", content: "The Verdict — Delulu Bench" },
       {
@@ -43,21 +43,26 @@ export const Route = createFileRoute("/verdict")({
 });
 
 function Verdict() {
-  const { c } = Route.useSearch();
-  const [item, setItem] = useState<Case | null>(null);
+  const { id } = Route.useSearch();
 
-  useEffect(() => {
-    const decoded = c ? decodeCase(c) : null;
-    if (!decoded) {
-      setItem(null);
-      return;
-    }
-    // Prefer the locally stored copy so votes cast in this session show up.
-    const local = loadCases().find((x) => x.id === decoded.id);
-    setItem(local ?? decoded);
-  }, [c]);
+  const { data: item, isLoading } = useQuery({
+    queryKey: ["case", id],
+    queryFn: () => fetchCase(id),
+    enabled: Boolean(id),
+    refetchInterval: 10000,
+  });
 
   const dialogue = useMemo(() => pick(DIALOGUES, item?.id), [item?.id]);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <section className="mx-auto max-w-2xl px-4 py-20 text-center text-sm text-muted-foreground">
+          Fetching the case file…
+        </section>
+      </Layout>
+    );
+  }
 
   if (!item) {
     return (
@@ -80,7 +85,7 @@ function Verdict() {
 
   const total = totalVotes(item);
   const lead = leadingVerdict(item);
-  const settled = total >= VERDICT_THRESHOLD;
+  const settled = isClosed(item) && lead !== null;
 
   async function copy() {
     try {
@@ -125,7 +130,7 @@ function Verdict() {
               <div className="flex flex-wrap items-center gap-3">
                 <VerdictBadge verdict={lead.key} percent={lead.percent} />
                 <span className="text-sm text-muted-foreground">
-                  {total} votes · verdict delivered
+                  {total} {total === 1 ? "vote" : "votes"} · verdict delivered
                 </span>
               </div>
             ) : (
