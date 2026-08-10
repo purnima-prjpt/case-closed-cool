@@ -1,4 +1,7 @@
-// Delulu Bench — all state lives in the browser. sessionStorage + URL only.
+// Delulu Bench — cases and votes live in the shared cloud database.
+// No accounts: each browser gets a random anonymous voter key.
+
+import { supabase } from "@/integrations/supabase/client";
 
 export type VerdictKey = "notGuilty" | "guilty" | "shared";
 
@@ -11,7 +14,9 @@ export type Case = {
   sentence?: string;
   createdAt: number;
   expiresAt: number;
+  closedAt: number | null;
   votes: Record<VerdictKey, number>;
+  voted: boolean;
 };
 
 export const CATEGORIES = [
@@ -54,8 +59,7 @@ export const SENTENCES = [
   "Left on read by the court. Case closed.",
 ];
 
-const KEY = "delulu-bench:v1";
-const VOTED_KEY = "delulu-bench:voted:v1";
+const VOTER_KEY = "delulu-bench:voter:v1";
 export const LIFETIME_MS = 24 * 60 * 60 * 1000;
 export const VERDICT_THRESHOLD = 5;
 
@@ -70,130 +74,115 @@ export function pick<T>(list: readonly T[], seed?: string): T {
   return list[h % list.length]!;
 }
 
-export function newId() {
-  return Math.random().toString(36).slice(2, 9);
-}
-
-function seedCases(): Case[] {
-  const now = Date.now();
-  const base = [
-    {
-      title: "My roommate keeps using my charger without asking",
-      category: "Roommates",
-      story:
-        "Every single night my 65W brick migrates to her side of the room. I've asked nicely four times. Yesterday I found it under her pillow like a hostage.",
-      defense: "She says a charger in a shared flat is 'communal infrastructure'.",
-      votes: { notGuilty: 3, guilty: 1, shared: 1 },
-      age: 3,
-    },
-    {
-      title: "My friend dodged the bill again",
-      category: "Money",
-      story:
-        "Fourth dinner in a row where he goes to the washroom exactly when the bill lands. He ordered the most expensive thing both times I counted.",
-      defense: "He claims his UPI has been 'acting weird since March'.",
-      votes: { notGuilty: 4, guilty: 6, shared: 2 },
-      age: 8,
-    },
-    {
-      title: "I left the group chat over a poll about brunch",
-      category: "Group Chat",
-      story:
-        "They made a poll with 11 options, ignored my vote, and then picked the place I said I was allergic to. So I left. Dramatically.",
-      defense: "They say I could have 'just muted it like a normal person'.",
-      votes: { notGuilty: 2, guilty: 2, shared: 3 },
-      age: 14,
-    },
-    {
-      title: "I ate my flatmate's labelled leftovers",
-      category: "Food Crimes",
-      story:
-        "It had her name on a sticky note. But it was 2am, it was biryani, and I fully intended to replace it. I have not replaced it. It has been nine days.",
-      defense: "I did leave a very heartfelt apology note with a drawing.",
-      votes: { notGuilty: 1, guilty: 7, shared: 2 },
-      age: 19,
-    },
-  ];
-  return base.map((c) => ({
-    id: newId(),
-    title: c.title,
-    category: c.category,
-    story: c.story,
-    defense: c.defense,
-    createdAt: now - c.age * 60 * 60 * 1000,
-    expiresAt: now + (24 - c.age) * 60 * 60 * 1000,
-    votes: c.votes,
-  }));
-}
-
-export function loadCases(): Case[] {
-  if (!isBrowser()) return [];
-  try {
-    const raw = sessionStorage.getItem(KEY);
-    if (!raw) {
-      const seeded = seedCases();
-      sessionStorage.setItem(KEY, JSON.stringify(seeded));
-      return seeded;
-    }
-    const parsed = JSON.parse(raw) as Case[];
-    return parsed.filter((c) => c.expiresAt > Date.now());
-  } catch {
-    return [];
+/** Random, anonymous, per-browser key. Not tied to any identity. */
+export function voterKey(): string {
+  if (!isBrowser()) return "";
+  let key = localStorage.getItem(VOTER_KEY);
+  if (!key) {
+    key = crypto.randomUUID();
+    localStorage.setItem(VOTER_KEY, key);
   }
+  return key;
 }
 
-export function saveCases(cases: Case[]) {
-  if (!isBrowser()) return;
-  sessionStorage.setItem(KEY, JSON.stringify(cases));
-}
+// --- mapping -------------------------------------------------------------
 
-export function addCase(input: {
+type Row = {
+  id: string;
   title: string;
   category: string;
   story: string;
   defense: string;
-  sentence?: string;
-}): Case {
-  const now = Date.now();
-  const created: Case = {
-    id: newId(),
-    ...input,
-    createdAt: now,
-    expiresAt: now + LIFETIME_MS,
-    votes: { notGuilty: 0, guilty: 0, shared: 0 },
-  };
-  const all = loadCases();
-  saveCases([created, ...all]);
-  return created;
-}
+  sentence: string | null;
+  created_at: string;
+  expires_at: string;
+  closed_at: string | null;
+  votes: { verdict: string; voter_key: string }[] | null;
+};
 
-export function voteOn(id: string, verdict: VerdictKey): Case[] {
-  const all = loadCases().map((c) =>
-    c.id === id ? { ...c, votes: { ...c.votes, [verdict]: c.votes[verdict] + 1 } } : c,
-  );
-  saveCases(all);
-  markVoted(id);
-  return all;
-}
+const SELECT = "id,title,category,story,defense,sentence,created_at,expires_at,closed_at,votes(verdict,voter_key)";
 
-export function votedIds(): string[] {
-  if (!isBrowser()) return [];
-  try {
-    return JSON.parse(sessionStorage.getItem(VOTED_KEY) ?? "[]") as string[];
-  } catch {
-    return [];
+function toCase(row: Row, me: string): Case {
+  const votes: Record<VerdictKey, number> = { notGuilty: 0, guilty: 0, shared: 0 };
+  let voted = false;
+  for (const v of row.votes ?? []) {
+    if (v.verdict in votes) votes[v.verdict as VerdictKey] += 1;
+    if (v.voter_key === me) voted = true;
   }
+  return {
+    id: row.id,
+    title: row.title,
+    category: row.category,
+    story: row.story,
+    defense: row.defense,
+    ...(row.sentence ? { sentence: row.sentence } : {}),
+    createdAt: new Date(row.created_at).getTime(),
+    expiresAt: new Date(row.expires_at).getTime(),
+    closedAt: row.closed_at ? new Date(row.closed_at).getTime() : null,
+    votes,
+    voted,
+  };
 }
 
-function markVoted(id: string) {
-  if (!isBrowser()) return;
-  const ids = new Set(votedIds());
-  ids.add(id);
-  sessionStorage.setItem(VOTED_KEY, JSON.stringify([...ids]));
+// --- data ----------------------------------------------------------------
+
+export async function fetchCases(): Promise<Case[]> {
+  const me = voterKey();
+  const { data, error } = await supabase
+    .from("cases")
+    .select(SELECT)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return ((data ?? []) as unknown as Row[]).map((r) => toCase(r, me));
 }
+
+export async function fetchCase(id: string): Promise<Case | null> {
+  const me = voterKey();
+  const { data, error } = await supabase.from("cases").select(SELECT).eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data ? toCase(data as unknown as Row, me) : null;
+}
+
+export async function createCase(input: {
+  title: string;
+  story: string;
+  defense: string;
+  sentence?: string;
+}): Promise<Case> {
+  const { data, error } = await supabase
+    .from("cases")
+    .insert({
+      title: input.title,
+      category: "Open Court",
+      story: input.story,
+      defense: input.defense,
+      sentence: input.sentence ?? null,
+    })
+    .select(SELECT)
+    .single();
+  if (error) throw error;
+  return toCase(data as unknown as Row, voterKey());
+}
+
+export async function castVote(caseId: string, verdict: VerdictKey): Promise<void> {
+  const { error } = await supabase
+    .from("votes")
+    .insert({ case_id: caseId, verdict, voter_key: voterKey() });
+  if (error) throw error;
+}
+
+// --- derived helpers -----------------------------------------------------
 
 export function totalVotes(c: Case) {
   return c.votes.notGuilty + c.votes.guilty + c.votes.shared;
+}
+
+export function isClosed(c: Case) {
+  return c.closedAt !== null || c.expiresAt <= Date.now();
+}
+
+export function isOpen(c: Case) {
+  return !isClosed(c);
 }
 
 export function leadingVerdict(c: Case): { key: VerdictKey; percent: number } | null {
@@ -213,30 +202,7 @@ export function timeLeft(c: Case) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-// --- share encoding: whole case travels in the URL ---
-
-export function encodeCase(c: Case): string {
-  const json = JSON.stringify(c);
-  const bytes = new TextEncoder().encode(json);
-  let bin = "";
-  bytes.forEach((b) => (bin += String.fromCharCode(b)));
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-export function decodeCase(encoded: string): Case | null {
-  try {
-    const b64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
-    const bin = atob(b64);
-    const bytes = Uint8Array.from(bin, (ch) => ch.charCodeAt(0));
-    const parsed = JSON.parse(new TextDecoder().decode(bytes)) as Case;
-    if (!parsed?.id || !parsed?.title) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
 export function shareUrl(c: Case) {
   if (!isBrowser()) return "";
-  return `${window.location.origin}/verdict?c=${encodeCase(c)}`;
+  return `${window.location.origin}/verdict?id=${c.id}`;
 }
