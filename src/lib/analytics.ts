@@ -6,7 +6,7 @@ declare global {
 }
 
 const MEASUREMENT_ID =
-  import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_ANALYTICS_API_KEY ?? "G-ZC5JGQVMSK";
+  import.meta.env["VITE_LOVABLE_CONNECTOR_GOOGLE_ANALYTICS_API_KEY"] ?? "G-ZC5JGQVMSK";
 
 export function initAnalytics() {
   if (typeof window === "undefined" || !MEASUREMENT_ID) return;
