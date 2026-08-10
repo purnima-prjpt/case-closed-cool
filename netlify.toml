@@ -1,0 +1,14 @@
+[build]
+  command = "bun run build"
+  publish = "dist"
+
+[build.environment]
+  NITRO_PRESET = "netlify"
+  NETLIFY_BUN_VERSION = "1.2"
+
+# Nitro's Netlify preset auto-generates the server function and _redirects file.
+# The rules below are a safety net in case the generated redirect is missing.
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/server/server"
+  status = 200
