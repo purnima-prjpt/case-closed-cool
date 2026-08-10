@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 
 import {
   VERDICTS,
+  isClosed,
   leadingVerdict,
-  shareUrl,
   timeLeft,
   totalVotes,
   type Case,
@@ -36,6 +36,11 @@ export function Countdown({ item }: { item: Case }) {
     const t = setInterval(() => setLabel(timeLeft(item)), 1000);
     return () => clearInterval(t);
   }, [item]);
+
+  if (item.closedAt !== null) {
+    return <span className="font-mono text-xs text-muted-foreground">case closed</span>;
+  }
+
   return (
     <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
       <Clock className="h-3.5 w-3.5" /> {label} left
@@ -68,10 +73,10 @@ export function CaseCard({ item }: { item: Case }) {
         </span>
         <Link
           to="/verdict"
-          search={{ c: shareUrl(item).split("?c=")[1] ?? "" }}
+          search={{ id: item.id }}
           className="ml-auto text-sm font-semibold text-primary hover:underline"
         >
-          Open case →
+          {isClosed(item) ? "See verdict →" : "Open case →"}
         </Link>
       </div>
     </article>
