@@ -10,6 +10,8 @@ import {
   VERDICTS,
   VERDICT_THRESHOLD,
   castVote,
+  describeError,
+
   fetchCases,
   isOpen,
   pick,
