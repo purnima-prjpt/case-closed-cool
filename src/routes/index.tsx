@@ -120,10 +120,15 @@ function Index() {
           <label className="mt-5 block text-sm font-semibold">What happened?</label>
           <input
             value={title}
+            maxLength={TITLE_MAX}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Two friends in my group chat won't stop fighting over a bill"
             className="mt-1.5 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
+          <p className="mt-1 text-right font-mono text-xs text-muted-foreground">
+            {title.trim().length}/{TITLE_MAX}
+          </p>
+
 
           <label className="mt-4 block text-sm font-semibold">Side A</label>
           <textarea
