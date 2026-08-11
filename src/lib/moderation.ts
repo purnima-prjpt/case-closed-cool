@@ -95,15 +95,34 @@ export function moderate(text: string, label = "This", minLength = 10): Moderati
     BANNED.find((word) => word.length > 4 && squashed.includes(word.replace(/\s+/g, ""))) ||
     MASKED.some((re) => re.test(trimmed));
   if (hit) {
-    return { ok: false, reason: "Order, order! Keep it light — that language can't enter the courtroom." };
+    return {
+      ok: false,
+      reason: `${label} contains abusive or censored language. Order, order! Rewrite it clean — mogambo khush nahi hua.`,
+    };
   }
 
-  if (PERSONAL_INFO.some((re) => re.test(trimmed))) {
-    return { ok: false, reason: "No phone numbers, emails, links, or addresses. Stay anonymous, stay iconic." };
+  const pii = /[\w.+-]+@[\w-]+\.[\w.]+/.test(trimmed)
+    ? "an email address"
+    : /\bhttps?:\/\/\S+/i.test(trimmed)
+      ? "a link"
+      : /\b\d{10}\b/.test(trimmed)
+        ? "a phone number"
+        : PERSONAL_INFO[3]!.test(trimmed)
+          ? "a street address"
+          : null;
+  if (pii) {
+    return {
+      ok: false,
+      reason: `${label} contains ${pii}. Remove it — the court runs on anonymity, not addresses.`,
+    };
   }
 
   if (/(.)\1{9,}/.test(trimmed)) {
-    return { ok: false, reason: "That's keyboard smashing, not a case. Try again." };
+    const ch = /(.)\1{9,}/.exec(trimmed)![1];
+    return {
+      ok: false,
+      reason: `${label} repeats "${ch}" ten-plus times. That's keyboard smashing, not testimony — say it in words.`,
+    };
   }
 
   return { ok: true };
