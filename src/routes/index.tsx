@@ -64,18 +64,14 @@ function Index() {
       toast.success("Case filed. Order, order!");
       navigate({ to: "/verdict", search: { id: created.id } });
     },
-    onError: (err: unknown) =>
-      toast.error(
-        err instanceof Error && err.message
-          ? `Couldn't file the case: ${err.message}`
-          : "Couldn't file the case. Try again in a moment.",
-      ),
+    onError: (err: unknown) => toast.error(describeError(err, "file")),
   });
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     for (const [text, label, min, max] of [
-      [title, "Your case title", 10, 200],
+      [title, "Your case title", 10, TITLE_MAX],
+
       [story, "Your side of the story", 10, 2000],
       [defense, "The other side", 3, 2000],
       ...(sentence.trim() ? ([[sentence, "Your suggested sentence", 3, 200]] as const) : []),
