@@ -168,3 +168,62 @@
     font-family: var(--font-display);
   }
 }
+
+/* Polished, glossy surfaces */
+@utility btn-shine {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in oklab, white 22%, transparent),
+    transparent 52%,
+    color-mix(in oklab, black 12%, transparent)
+  );
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 35%, transparent),
+    inset 0 -1px 0 color-mix(in oklab, black 18%, transparent),
+    0 8px 20px -12px color-mix(in oklab, var(--primary) 80%, transparent);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    transform: translateX(-130%) skewX(-18deg);
+    background: linear-gradient(
+      90deg,
+      transparent 30%,
+      color-mix(in oklab, white 42%, transparent) 50%,
+      transparent 70%
+    );
+    transition: transform 0.75s ease;
+  }
+
+  &:hover::after {
+    transform: translateX(130%) skewX(-18deg);
+  }
+}
+
+@utility card-sheen {
+  position: relative;
+  background-image: linear-gradient(
+    160deg,
+    color-mix(in oklab, white 9%, transparent),
+    transparent 42%
+  );
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 45%, transparent),
+    0 14px 34px -24px color-mix(in oklab, var(--primary) 70%, transparent);
+}
+
+.dark .card-sheen {
+  background-image: linear-gradient(
+    160deg,
+    color-mix(in oklab, white 7%, transparent),
+    transparent 45%
+  );
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 12%, transparent),
+    0 16px 38px -26px oklch(0 0 0 / 0.8);
+}
