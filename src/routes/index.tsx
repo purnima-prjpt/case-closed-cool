@@ -64,18 +64,23 @@ function Index() {
       toast.success("Case filed. Order, order!");
       navigate({ to: "/verdict", search: { id: created.id } });
     },
-    onError: () => toast.error("Couldn't file the case. Try again in a moment."),
+    onError: (err: unknown) =>
+      toast.error(
+        err instanceof Error && err.message
+          ? `Couldn't file the case: ${err.message}`
+          : "Couldn't file the case. Try again in a moment.",
+      ),
   });
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    for (const [text, label, min] of [
-      [title, "Your case title", 10],
-      [story, "Your side of the story", 10],
-      [defense, "The other side", 3],
-      ...(sentence.trim() ? ([[sentence, "Your suggested sentence", 3]] as const) : []),
+    for (const [text, label, min, max] of [
+      [title, "Your case title", 10, 200],
+      [story, "Your side of the story", 10, 2000],
+      [defense, "The other side", 3, 2000],
+      ...(sentence.trim() ? ([[sentence, "Your suggested sentence", 3, 200]] as const) : []),
     ] as const) {
-      const check = moderate(text, label, min);
+      const check = moderate(text, label, min, max);
       if (!check.ok) {
         toast.error(check.reason);
         return;
