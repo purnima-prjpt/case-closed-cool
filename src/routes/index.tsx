@@ -6,8 +6,11 @@ import { toast } from "sonner";
 
 import { CaseCard } from "@/components/CaseCard";
 import { Layout } from "@/components/Layout";
-import { DIALOGUES, createCase, fetchCases, isOpen, pick } from "@/lib/court";
+import { DIALOGUES, createCase, describeError, fetchCases, isOpen, pick } from "@/lib/court";
 import { moderate } from "@/lib/moderation";
+
+const TITLE_MAX = 400;
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
