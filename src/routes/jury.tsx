@@ -41,6 +41,7 @@ export const Route = createFileRoute("/jury")({
 function Jury() {
   const queryClient = useQueryClient();
   const [index, setIndex] = useState(0);
+  const [skipped, setSkipped] = useState<string[]>([]);
 
   const { data: cases = [], isLoading } = useQuery({
     queryKey: ["cases"],
@@ -48,9 +49,21 @@ function Jury() {
     refetchInterval: 15000,
   });
 
-  const queue = useMemo(() => cases.filter((c) => isOpen(c) && !c.voted), [cases]);
-  const current = queue[index] ?? queue[0];
+  const pending = useMemo(() => cases.filter((c) => isOpen(c) && !c.voted), [cases]);
+  const queue = useMemo(() => {
+    const fresh = pending.filter((c) => !skipped.includes(c.id));
+    const later = pending.filter((c) => skipped.includes(c.id));
+    return [...fresh, ...later];
+  }, [pending, skipped]);
+  const allSkipped = queue.length > 0 && queue.every((c) => skipped.includes(c.id));
+  const current = allSkipped ? undefined : (queue[index] ?? queue[0]);
   const dialogue = useMemo(() => pick(DIALOGUES, current?.id), [current?.id]);
+
+  function skip() {
+    if (!current) return;
+    setSkipped((s) => (s.includes(current.id) ? s : [...s, current.id]));
+    setIndex(0);
+  }
 
   const mutation = useMutation({
     mutationFn: ({ id, verdict }: { id: string; verdict: VerdictKey }) => castVote(id, verdict),
@@ -59,11 +72,12 @@ function Jury() {
       setIndex((i) => i + 1);
       queryClient.invalidateQueries({ queryKey: ["cases"] });
     },
-    onError: () => {
-      toast.error("That vote didn't land — the case may have closed already.");
+    onError: (err: unknown) => {
+      toast.error(describeError(err, "vote"));
       queryClient.invalidateQueries({ queryKey: ["cases"] });
     },
   });
+
 
   return (
     <Layout>
