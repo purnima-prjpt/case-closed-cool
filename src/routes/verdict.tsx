@@ -74,7 +74,7 @@ function Verdict() {
           </p>
           <Link
             to="/"
-            className="mt-6 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+            className="btn-shine mt-6 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-transform hover:-translate-y-0.5"
           >
             Back to the bench
           </Link>
@@ -99,7 +99,7 @@ function Verdict() {
   return (
     <Layout>
       <section className="mx-auto max-w-2xl px-4 py-12">
-        <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="card-sheen rounded-2xl border border-border bg-card p-6">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-primary">
               {item.category}
@@ -171,7 +171,7 @@ function Verdict() {
           <div className="mt-6 flex flex-wrap gap-2">
             <button
               onClick={copy}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+              className="btn-shine inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-transform hover:-translate-y-0.5"
             >
               <Link2 className="h-4 w-4" /> Copy share link
             </button>

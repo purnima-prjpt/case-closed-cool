@@ -111,7 +111,7 @@ function Index() {
       </section>
 
       <section className="mx-auto max-w-2xl px-4">
-        <form onSubmit={submit} className="rounded-2xl border border-border bg-card p-5">
+        <form onSubmit={submit} className="card-sheen rounded-2xl border border-border bg-card p-5">
           <h2 className="font-display text-xl font-bold">Raise a case</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Your drama or someone else's — file it as a witness too. No names, no numbers, no links.
@@ -163,7 +163,7 @@ function Index() {
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+            className="btn-shine mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60"
           >
             <Gavel className="h-4 w-4" /> {mutation.isPending ? "Filing…" : "File it"}
           </button>
