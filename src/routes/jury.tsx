@@ -93,17 +93,34 @@ function Jury() {
           <p className="mt-8 text-sm text-muted-foreground">Calling the docket…</p>
         ) : !current ? (
           <div className="mt-8 rounded-2xl border border-dashed border-border p-10 text-center">
-            <p className="font-display text-lg font-bold">Court adjourned.</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              You've judged everything on the docket. Tareekh pe tareekh.
+            <p className="font-display text-lg font-bold">
+              {allSkipped ? "You skipped the whole docket." : "Court adjourned."}
             </p>
-            <Link
-              to="/"
-              className="mt-5 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
-            >
-              Raise your own case
-            </Link>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {allSkipped
+                ? "Picture abhi baaki hai — reshuffle and give them another look."
+                : "You've judged everything on the docket. Tareekh pe tareekh."}
+            </p>
+            {allSkipped ? (
+              <button
+                onClick={() => {
+                  setSkipped([]);
+                  setIndex(0);
+                }}
+                className="mt-5 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+              >
+                Reshuffle the docket
+              </button>
+            ) : (
+              <Link
+                to="/"
+                className="mt-5 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+              >
+                Raise your own case
+              </Link>
+            )}
           </div>
+
         ) : (
           <div className="mt-8 rounded-2xl border border-border bg-card p-6">
             <div className="flex items-center justify-between gap-3">
