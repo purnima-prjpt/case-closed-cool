@@ -60,7 +60,12 @@ function deleet(text: string) {
 
 export type ModerationResult = { ok: true } | { ok: false; reason: string };
 
-export function moderate(text: string, label = "This", minLength = 10): ModerationResult {
+export function moderate(
+  text: string,
+  label = "This",
+  minLength = 10,
+  maxLength = 600,
+): ModerationResult {
   const trimmed = text.trim();
 
   if (trimmed.length === 0) {
@@ -79,10 +84,10 @@ export function moderate(text: string, label = "This", minLength = 10): Moderati
       reason: `${label} has no real words — only symbols or numbers. Kitne aadmi the? Type it in words, please.`,
     };
   }
-  if (trimmed.length > 600) {
+  if (trimmed.length > maxLength) {
     return {
       ok: false,
-      reason: `${label} is ${trimmed.length} characters; the limit is 600. Trim ${trimmed.length - 600} — picture abhi baaki hai, par itni lambi nahi.`,
+      reason: `${label} is ${trimmed.length} characters; the limit is ${maxLength}. Trim ${trimmed.length - maxLength} — picture abhi baaki hai, par itni lambi nahi.`,
     };
   }
 
