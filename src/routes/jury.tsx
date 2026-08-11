@@ -147,6 +147,15 @@ function Jury() {
               ))}
             </div>
 
+            <button
+              onClick={skip}
+              disabled={mutation.isPending || queue.length < 2}
+              className="mt-2 w-full rounded-xl border border-dashed border-border px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+            >
+              Skip for now →
+            </button>
+
+
             <div className="mt-5">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
