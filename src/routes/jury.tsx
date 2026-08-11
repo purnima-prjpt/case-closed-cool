@@ -107,14 +107,14 @@ function Jury() {
                   setSkipped([]);
                   setIndex(0);
                 }}
-                className="mt-5 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+                className="btn-shine mt-5 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-transform hover:-translate-y-0.5"
               >
                 Reshuffle the docket
               </button>
             ) : (
               <Link
                 to="/"
-                className="mt-5 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+                className="btn-shine mt-5 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-transform hover:-translate-y-0.5"
               >
                 Raise your own case
               </Link>
@@ -122,7 +122,7 @@ function Jury() {
           </div>
 
         ) : (
-          <div className="mt-8 rounded-2xl border border-border bg-card p-6">
+          <div className="card-sheen mt-8 rounded-2xl border border-border bg-card p-6">
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary">
                 {current.category}

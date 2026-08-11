@@ -53,7 +53,7 @@ export function CaseCard({ item }: { item: Case }) {
   const total = totalVotes(item);
 
   return (
-    <article className="rounded-2xl border border-border bg-card p-5 transition-shadow hover:shadow-[0_8px_24px_-16px_oklch(0.269_0.042_285.2/0.6)]">
+    <article className="card-sheen rounded-2xl border border-border bg-card p-5 transition-shadow hover:shadow-[0_8px_24px_-16px_oklch(0.269_0.042_285.2/0.6)]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-primary">
