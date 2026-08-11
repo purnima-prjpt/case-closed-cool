@@ -6,8 +6,11 @@ import { toast } from "sonner";
 
 import { CaseCard } from "@/components/CaseCard";
 import { Layout } from "@/components/Layout";
-import { DIALOGUES, createCase, fetchCases, isOpen, pick } from "@/lib/court";
+import { DIALOGUES, createCase, describeError, fetchCases, isOpen, pick } from "@/lib/court";
 import { moderate } from "@/lib/moderation";
+
+const TITLE_MAX = 400;
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -64,18 +67,14 @@ function Index() {
       toast.success("Case filed. Order, order!");
       navigate({ to: "/verdict", search: { id: created.id } });
     },
-    onError: (err: unknown) =>
-      toast.error(
-        err instanceof Error && err.message
-          ? `Couldn't file the case: ${err.message}`
-          : "Couldn't file the case. Try again in a moment.",
-      ),
+    onError: (err: unknown) => toast.error(describeError(err, "file")),
   });
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     for (const [text, label, min, max] of [
-      [title, "Your case title", 10, 200],
+      [title, "Your case title", 10, TITLE_MAX],
+
       [story, "Your side of the story", 10, 2000],
       [defense, "The other side", 3, 2000],
       ...(sentence.trim() ? ([[sentence, "Your suggested sentence", 3, 200]] as const) : []),
@@ -121,10 +120,15 @@ function Index() {
           <label className="mt-5 block text-sm font-semibold">What happened?</label>
           <input
             value={title}
+            maxLength={TITLE_MAX}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Two friends in my group chat won't stop fighting over a bill"
             className="mt-1.5 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
+          <p className="mt-1 text-right font-mono text-xs text-muted-foreground">
+            {title.trim().length}/{TITLE_MAX}
+          </p>
+
 
           <label className="mt-4 block text-sm font-semibold">Side A</label>
           <textarea

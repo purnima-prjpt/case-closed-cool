@@ -10,6 +10,8 @@ import {
   VERDICTS,
   VERDICT_THRESHOLD,
   castVote,
+  describeError,
+
   fetchCases,
   isOpen,
   pick,
@@ -41,6 +43,7 @@ export const Route = createFileRoute("/jury")({
 function Jury() {
   const queryClient = useQueryClient();
   const [index, setIndex] = useState(0);
+  const [skipped, setSkipped] = useState<string[]>([]);
 
   const { data: cases = [], isLoading } = useQuery({
     queryKey: ["cases"],
@@ -48,9 +51,21 @@ function Jury() {
     refetchInterval: 15000,
   });
 
-  const queue = useMemo(() => cases.filter((c) => isOpen(c) && !c.voted), [cases]);
-  const current = queue[index] ?? queue[0];
+  const pending = useMemo(() => cases.filter((c) => isOpen(c) && !c.voted), [cases]);
+  const queue = useMemo(() => {
+    const fresh = pending.filter((c) => !skipped.includes(c.id));
+    const later = pending.filter((c) => skipped.includes(c.id));
+    return [...fresh, ...later];
+  }, [pending, skipped]);
+  const allSkipped = queue.length > 0 && queue.every((c) => skipped.includes(c.id));
+  const current = allSkipped ? undefined : (queue[index] ?? queue[0]);
   const dialogue = useMemo(() => pick(DIALOGUES, current?.id), [current?.id]);
+
+  function skip() {
+    if (!current) return;
+    setSkipped((s) => (s.includes(current.id) ? s : [...s, current.id]));
+    setIndex(0);
+  }
 
   const mutation = useMutation({
     mutationFn: ({ id, verdict }: { id: string; verdict: VerdictKey }) => castVote(id, verdict),
@@ -59,11 +74,12 @@ function Jury() {
       setIndex((i) => i + 1);
       queryClient.invalidateQueries({ queryKey: ["cases"] });
     },
-    onError: () => {
-      toast.error("That vote didn't land — the case may have closed already.");
+    onError: (err: unknown) => {
+      toast.error(describeError(err, "vote"));
       queryClient.invalidateQueries({ queryKey: ["cases"] });
     },
   });
+
 
   return (
     <Layout>
@@ -77,17 +93,34 @@ function Jury() {
           <p className="mt-8 text-sm text-muted-foreground">Calling the docket…</p>
         ) : !current ? (
           <div className="mt-8 rounded-2xl border border-dashed border-border p-10 text-center">
-            <p className="font-display text-lg font-bold">Court adjourned.</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              You've judged everything on the docket. Tareekh pe tareekh.
+            <p className="font-display text-lg font-bold">
+              {allSkipped ? "You skipped the whole docket." : "Court adjourned."}
             </p>
-            <Link
-              to="/"
-              className="mt-5 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
-            >
-              Raise your own case
-            </Link>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {allSkipped
+                ? "Picture abhi baaki hai — reshuffle and give them another look."
+                : "You've judged everything on the docket. Tareekh pe tareekh."}
+            </p>
+            {allSkipped ? (
+              <button
+                onClick={() => {
+                  setSkipped([]);
+                  setIndex(0);
+                }}
+                className="mt-5 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+              >
+                Reshuffle the docket
+              </button>
+            ) : (
+              <Link
+                to="/"
+                className="mt-5 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+              >
+                Raise your own case
+              </Link>
+            )}
           </div>
+
         ) : (
           <div className="mt-8 rounded-2xl border border-border bg-card p-6">
             <div className="flex items-center justify-between gap-3">
@@ -130,6 +163,15 @@ function Jury() {
                 </button>
               ))}
             </div>
+
+            <button
+              onClick={skip}
+              disabled={mutation.isPending || queue.length < 2}
+              className="mt-2 w-full rounded-xl border border-dashed border-border px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+            >
+              Skip for now →
+            </button>
+
 
             <div className="mt-5">
               <div className="flex items-center justify-between text-xs text-muted-foreground">

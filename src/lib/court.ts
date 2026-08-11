@@ -171,6 +171,36 @@ export async function castVote(caseId: string, verdict: VerdictKey): Promise<voi
   if (error) throw error;
 }
 
+/** Turn a backend error into a plain, courtroom-flavoured sentence. */
+export function describeError(err: unknown, action: "file" | "vote"): string {
+  const e = err as { code?: string; message?: string } | null;
+  const code = e?.code ?? "";
+  const msg = (e?.message ?? "").toLowerCase();
+
+  if (code === "23505" || msg.includes("duplicate key")) {
+    return "You've already voted on this case. One vote per browser — no double dhamaal.";
+  }
+  if (code === "42501" || msg.includes("row-level security") || msg.includes("violates row")) {
+    return action === "vote"
+      ? "This case is already closed — the jury filled up or the 24 hours ran out."
+      : "The bench rejected this filing: something is too long or empty. Trim it and try again.";
+  }
+  if (code === "23514" || msg.includes("check constraint")) {
+    return "One of your fields is longer than the court allows. Shorten it and refile.";
+  }
+  if (code === "23503" || msg.includes("foreign key")) {
+    return "That case no longer exists — it expired and vanished.";
+  }
+  if (msg.includes("fetch") || msg.includes("network") || code === "") {
+    if (msg.includes("fetch") || msg.includes("network")) {
+      return "Couldn't reach the court — check your connection and try again.";
+    }
+  }
+  return e?.message
+    ? `The bench refused it: ${e.message}`
+    : "Something went wrong at the bench. Try once more.";
+}
+
 // --- derived helpers -----------------------------------------------------
 
 export function totalVotes(c: Case) {
