@@ -139,16 +139,22 @@ function Index() {
             placeholder="Set the scene — yours, theirs, or the whole group's. Kitne aadmi the?"
             className="mt-1.5 w-full resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
+          <p className="mt-1 text-right font-mono text-xs text-muted-foreground">
+            {story.length}/2000
+          </p>
 
           <label className="mt-4 block text-sm font-semibold">Side B</label>
           <textarea
             value={defense}
             onChange={(e) => setDefense(e.target.value)}
             rows={3}
+            maxLength={2000}
             placeholder="Be fair. What would the other side say?"
             className="mt-1.5 w-full resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
-
+          <p className="mt-1 text-right font-mono text-xs text-muted-foreground">
+            {defense.length}/2000
+          </p>
 
           <label className="mt-4 block text-sm font-semibold">
             Suggested sentence <span className="font-normal text-muted-foreground">(optional)</span>
@@ -157,9 +163,14 @@ function Index() {
             value={sentence}
             onChange={(e) => setSentence(e.target.value)}
             rows={2}
+            maxLength={500}
             placeholder="If guilty… one (1) sincere apology, no emoji."
             className="mt-1.5 w-full resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
+          <p className="mt-1 text-right font-mono text-xs text-muted-foreground">
+            {sentence.length}/500
+          </p>
+
 
           <button
             type="submit"
