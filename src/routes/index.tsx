@@ -77,7 +77,7 @@ function Index() {
 
       [story, "Your side of the story", 10, 2000],
       [defense, "The other side", 3, 2000],
-      ...(sentence.trim() ? ([[sentence, "Your suggested sentence", 3, 200]] as const) : []),
+      ...(sentence.trim() ? ([[sentence, "Your suggested sentence", 3, 500]] as const) : []),
     ] as const) {
       const check = moderate(text, label, min, max);
       if (!check.ok) {
