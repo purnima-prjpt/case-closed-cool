@@ -135,6 +135,7 @@ function Index() {
             value={story}
             onChange={(e) => setStory(e.target.value)}
             rows={4}
+            maxLength={2000}
             placeholder="Set the scene — yours, theirs, or the whole group's. Kitne aadmi the?"
             className="mt-1.5 w-full resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
