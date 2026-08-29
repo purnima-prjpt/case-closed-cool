@@ -97,17 +97,15 @@ type Row = {
   created_at: string;
   expires_at: string;
   closed_at: string | null;
-  votes: { verdict: string; voter_key: string }[] | null;
+  votes: { verdict: string }[] | null;
 };
 
-const SELECT = "id,title,category,story,defense,sentence,created_at,expires_at,closed_at,votes(verdict,voter_key)";
+const SELECT = "id,title,category,story,defense,sentence,created_at,expires_at,closed_at,votes(verdict)";
 
-function toCase(row: Row, me: string): Case {
+function toCase(row: Row, votedIds: Set<string>): Case {
   const votes: Record<VerdictKey, number> = { notGuilty: 0, guilty: 0, shared: 0 };
-  let voted = false;
   for (const v of row.votes ?? []) {
     if (v.verdict in votes) votes[v.verdict as VerdictKey] += 1;
-    if (v.voter_key === me) voted = true;
   }
   return {
     id: row.id,
@@ -120,28 +118,39 @@ function toCase(row: Row, me: string): Case {
     expiresAt: new Date(row.expires_at).getTime(),
     closedAt: row.closed_at ? new Date(row.closed_at).getTime() : null,
     votes,
-    voted,
+    voted: votedIds.has(row.id),
   };
+}
+
+/** Case ids this browser has already voted on. Voter keys never leave the server. */
+async function myVotedCaseIds(): Promise<Set<string>> {
+  const me = voterKey();
+  if (!me) return new Set();
+  const { data, error } = await supabase.rpc("voted_case_ids", { _voter_key: me });
+  if (error) return new Set();
+  return new Set(((data ?? []) as { case_id: string }[]).map((r) => r.case_id));
 }
 
 // --- data ----------------------------------------------------------------
 
 export async function fetchCases(): Promise<Case[]> {
-  const me = voterKey();
-  const { data, error } = await supabase
-    .from("cases")
-    .select(SELECT)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return ((data ?? []) as unknown as Row[]).map((r) => toCase(r, me));
+  const [voted, res] = await Promise.all([
+    myVotedCaseIds(),
+    supabase.from("cases").select(SELECT).order("created_at", { ascending: false }),
+  ]);
+  if (res.error) throw res.error;
+  return ((res.data ?? []) as unknown as Row[]).map((r) => toCase(r, voted));
 }
 
 export async function fetchCase(id: string): Promise<Case | null> {
-  const me = voterKey();
-  const { data, error } = await supabase.from("cases").select(SELECT).eq("id", id).maybeSingle();
-  if (error) throw error;
-  return data ? toCase(data as unknown as Row, me) : null;
+  const [voted, res] = await Promise.all([
+    myVotedCaseIds(),
+    supabase.from("cases").select(SELECT).eq("id", id).maybeSingle(),
+  ]);
+  if (res.error) throw res.error;
+  return res.data ? toCase(res.data as unknown as Row, voted) : null;
 }
+
 
 export async function createCase(input: {
   title: string;
