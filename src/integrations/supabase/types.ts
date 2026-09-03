@@ -84,7 +84,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      case_vote_counts: {
+        Row: {
+          case_id: string | null
+          count: number | null
+          verdict: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votes_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       voted_case_ids: {
