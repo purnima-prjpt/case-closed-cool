@@ -97,16 +97,30 @@ type Row = {
   created_at: string;
   expires_at: string;
   closed_at: string | null;
-  votes: { verdict: string }[] | null;
 };
 
-const SELECT = "id,title,category,story,defense,sentence,created_at,expires_at,closed_at,votes(verdict)";
+type VoteCountRow = {
+  case_id: string;
+  verdict: string;
+  count: number;
+};
 
-function toCase(row: Row, votedIds: Set<string>): Case {
-  const votes: Record<VerdictKey, number> = { notGuilty: 0, guilty: 0, shared: 0 };
-  for (const v of row.votes ?? []) {
-    if (v.verdict in votes) votes[v.verdict as VerdictKey] += 1;
+const SELECT = "id,title,category,story,defense,sentence,created_at,expires_at,closed_at";
+
+function buildVoteCountsMap(rows: VoteCountRow[]): Record<string, Record<VerdictKey, number>> {
+  const map: Record<string, Record<VerdictKey, number>> = {};
+  for (const row of rows) {
+    if (!map[row.case_id]) {
+      map[row.case_id] = { notGuilty: 0, guilty: 0, shared: 0 };
+    }
+    if (row.verdict in map[row.case_id]) {
+      map[row.case_id]![row.verdict as VerdictKey] = row.count;
+    }
   }
+  return map;
+}
+
+function toCase(row: Row, voteCounts: Record<string, Record<VerdictKey, number>>, votedIds: Set<string>): Case {
   return {
     id: row.id,
     title: row.title,
@@ -117,7 +131,7 @@ function toCase(row: Row, votedIds: Set<string>): Case {
     createdAt: new Date(row.created_at).getTime(),
     expiresAt: new Date(row.expires_at).getTime(),
     closedAt: row.closed_at ? new Date(row.closed_at).getTime() : null,
-    votes,
+    votes: voteCounts[row.id] ?? { notGuilty: 0, guilty: 0, shared: 0 },
     voted: votedIds.has(row.id),
   };
 }
@@ -131,24 +145,34 @@ async function myVotedCaseIds(): Promise<Set<string>> {
   return new Set(((data ?? []) as { case_id: string }[]).map((r) => r.case_id));
 }
 
+async function fetchVoteCounts(caseId?: string): Promise<Record<string, Record<VerdictKey, number>>> {
+  let query = supabase.from("case_vote_counts").select("case_id,verdict,count");
+  if (caseId) query = query.eq("case_id", caseId);
+  const { data, error } = await query;
+  if (error) throw error;
+  return buildVoteCountsMap((data ?? []) as VoteCountRow[]);
+}
+
 // --- data ----------------------------------------------------------------
 
 export async function fetchCases(): Promise<Case[]> {
-  const [voted, res] = await Promise.all([
+  const [voted, counts, res] = await Promise.all([
     myVotedCaseIds(),
+    fetchVoteCounts(),
     supabase.from("cases").select(SELECT).order("created_at", { ascending: false }),
   ]);
   if (res.error) throw res.error;
-  return ((res.data ?? []) as unknown as Row[]).map((r) => toCase(r, voted));
+  return ((res.data ?? []) as unknown as Row[]).map((r) => toCase(r, counts, voted));
 }
 
 export async function fetchCase(id: string): Promise<Case | null> {
-  const [voted, res] = await Promise.all([
+  const [voted, counts, res] = await Promise.all([
     myVotedCaseIds(),
+    fetchVoteCounts(id),
     supabase.from("cases").select(SELECT).eq("id", id).maybeSingle(),
   ]);
   if (res.error) throw res.error;
-  return res.data ? toCase(res.data as unknown as Row, voted) : null;
+  return res.data ? toCase(res.data as unknown as Row, counts, voted) : null;
 }
 
 
