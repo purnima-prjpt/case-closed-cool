@@ -110,11 +110,9 @@ const SELECT = "id,title,category,story,defense,sentence,created_at,expires_at,c
 function buildVoteCountsMap(rows: VoteCountRow[]): Record<string, Record<VerdictKey, number>> {
   const map: Record<string, Record<VerdictKey, number>> = {};
   for (const row of rows) {
-    if (!map[row.case_id]) {
-      map[row.case_id] = { notGuilty: 0, guilty: 0, shared: 0 };
-    }
-    if (row.verdict in map[row.case_id]) {
-      map[row.case_id]![row.verdict as VerdictKey] = row.count;
+    const counts = (map[row.case_id] ??= { notGuilty: 0, guilty: 0, shared: 0 });
+    if (row.verdict in counts) {
+      counts[row.verdict as VerdictKey] = row.count;
     }
   }
   return map;
