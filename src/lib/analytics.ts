@@ -23,7 +23,8 @@ export function initAnalytics() {
   window.gtag = gtag as unknown as (...args: unknown[]) => void;
 
   window.gtag("js", new Date());
-  window.gtag("config", MEASUREMENT_ID);
+  // We send page_view manually on every route change, so disable the automatic one.
+  window.gtag("config", MEASUREMENT_ID, { send_page_view: false });
 
   const script = document.createElement("script");
   script.async = true;
