@@ -192,7 +192,7 @@ export async function createCase(input: {
     .select(SELECT)
     .single();
   if (error) throw error;
-  return toCase(data as unknown as Row, new Set<string>());
+  return toCase(data as unknown as Row, {}, new Set<string>());
 }
 
 export async function castVote(caseId: string, verdict: VerdictKey): Promise<void> {
